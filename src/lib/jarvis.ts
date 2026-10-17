@@ -56,16 +56,30 @@ export interface TraceDetalhe {
 
 export type FeedbackKind = 'up' | 'down' | 'correcao' | 'intervencao' | 'reformulacao';
 
-async function authHeaders(extra?: HeadersInit): Promise<Headers> {
+async function authHeaders(
+  extra?: HeadersInit,
+  opts?: { json?: boolean },
+): Promise<Headers> {
   const headers = new Headers(extra);
   const token = await getDesktopToken();
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  if (!headers.has('Content-Type') && !headers.has('content-type')) {
+  const querJson = opts?.json !== false;
+  if (querJson && !headers.has('Content-Type') && !headers.has('content-type')) {
     headers.set('Content-Type', 'application/json');
   }
   return headers;
+}
+
+/** Cabeçalhos X-Transcript / X-Text vêm percent-encoded (HTTP latin-1). */
+export function decodificarCabecalho(valor: string | null): string {
+  if (!valor) return '';
+  try {
+    return decodeURIComponent(valor);
+  } catch {
+    return valor;
+  }
 }
 
 async function parseErro(res: Response): Promise<JarvisApiError> {
@@ -230,4 +244,149 @@ export async function enviarFeedback(
 /** Aplica o texto canônico do evento `fim` no lugar do acumulado de frases. */
 export function textoCanonico(exibido: string, fimText: string): string {
   return fimText;
+}
+
+export interface RespostaVoz {
+  transcript: string;
+  text: string;
+  trace_id: string;
+  agent: string;
+  audio: Blob;
+}
+
+export interface HudSecao {
+  nome: string;
+  ok: boolean;
+  resumo: string;
+  cegueira: string | null;
+}
+
+export interface HudAprovacao {
+  id: string;
+  ferramenta: string;
+  limite: string;
+  params: Record<string, unknown>;
+}
+
+export interface HudDados {
+  secoes: HudSecao[];
+  aprovacoes: HudAprovacao[];
+  agora: string;
+}
+
+/** POST /v1/voice — WAV PCM 16 kHz; canal no servidor é `voz`. */
+export async function enviarVoz(
+  wav: Blob,
+  opts?: { userRef?: string; signal?: AbortSignal; timeoutMs?: number },
+): Promise<RespostaVoz> {
+  const base = getApiUrl();
+  const timeoutMs = opts?.timeoutMs ?? 60_000;
+  const { signal, limpar } = comTimeout(opts?.signal, timeoutMs);
+  try {
+    const form = new FormData();
+    form.append('audio', wav, 'fala.wav');
+    form.append('user_ref', opts?.userRef ?? 'dono');
+    const res = await jarvisFetch(`${base}/v1/voice`, {
+      method: 'POST',
+      headers: await authHeaders(undefined, { json: false }),
+      body: form,
+      signal,
+    });
+    if (!res.ok) throw await parseErro(res);
+    return {
+      transcript: decodificarCabecalho(res.headers.get('X-Transcript')),
+      text: decodificarCabecalho(res.headers.get('X-Text')),
+      trace_id: res.headers.get('X-Trace-Id') ?? '',
+      agent: decodificarCabecalho(res.headers.get('X-Agent')),
+      audio: await res.blob(),
+    };
+  } finally {
+    limpar();
+  }
+}
+
+/** POST /v1/tts — até 1000 caracteres; devolve audio/wav. */
+export async function sintetizarTts(
+  texto: string,
+  opts?: { signal?: AbortSignal; timeoutMs?: number },
+): Promise<Blob> {
+  const trimmed = texto.trim().slice(0, 1000);
+  if (!trimmed) throw new JarvisApiError(400, 'texto vazio');
+  const base = getApiUrl();
+  const timeoutMs = opts?.timeoutMs ?? TIMEOUT_PADRAO_MS;
+  const { signal, limpar } = comTimeout(opts?.signal, timeoutMs);
+  try {
+    const res = await jarvisFetch(`${base}/v1/tts`, {
+      method: 'POST',
+      headers: await authHeaders(),
+      body: JSON.stringify({ texto: trimmed }),
+      signal,
+    });
+    if (!res.ok) throw await parseErro(res);
+    return await res.blob();
+  } finally {
+    limpar();
+  }
+}
+
+export async function obterHudDados(timeoutMs = TIMEOUT_PADRAO_MS): Promise<HudDados> {
+  const base = getApiUrl();
+  const { signal, limpar } = comTimeout(undefined, timeoutMs);
+  try {
+    const res = await jarvisFetch(`${base}/v1/hud/dados`, {
+      headers: await authHeaders(),
+      signal,
+    });
+    if (!res.ok) throw await parseErro(res);
+    return (await res.json()) as HudDados;
+  } finally {
+    limpar();
+  }
+}
+
+export async function negarAprovacao(
+  id: string,
+  timeoutMs = TIMEOUT_PADRAO_MS,
+): Promise<void> {
+  const base = getApiUrl();
+  const { signal, limpar } = comTimeout(undefined, timeoutMs);
+  try {
+    const res = await jarvisFetch(
+      `${base}/v1/aprovacoes/${encodeURIComponent(id)}/negar`,
+      {
+        method: 'POST',
+        headers: await authHeaders(),
+        signal,
+      },
+    );
+    if (!res.ok) throw await parseErro(res);
+  } finally {
+    limpar();
+  }
+}
+
+/**
+ * POST /v1/aprovacoes/{id}/executar — exige status `confirmada` no servidor
+ * (Telegram marca antes). Pendente → 409 até a API aceitar o fluxo desktop.
+ */
+export async function executarAprovacao(
+  id: string,
+  timeoutMs = TIMEOUT_PADRAO_MS,
+): Promise<{ status: string; resultado?: string }> {
+  const base = getApiUrl();
+  const { signal, limpar } = comTimeout(undefined, timeoutMs);
+  try {
+    const res = await jarvisFetch(
+      `${base}/v1/aprovacoes/${encodeURIComponent(id)}/executar`,
+      {
+        method: 'POST',
+        headers: await authHeaders(),
+        signal,
+      },
+    );
+    if (!res.ok) throw await parseErro(res);
+    return (await res.json()) as { status: string; resultado?: string };
+  } finally {
+    limpar();
+  }
 }

@@ -1,0 +1,244 @@
+/* HUD do JARVIS (escopo .hud-root — não sobrescreve o tema do app). */
+.hud-root {
+  --vacuo: #04121C;
+  --vacuo-fundo: #071C2A;
+  --holo: #7FE7FF;
+  --holo-tenue: #2A6F86;
+  --texto: #D9F6FF;
+  --texto-calmo: #8FB9C7;
+  --ambar: #FFB547;
+  --falha: #FF5A5F;
+  --familia: "Bahnschrift", "DIN Alternate", "Barlow Semi Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --passo: clamp(0.75rem, 1.6vmin, 1.25rem);
+  color-scheme: dark;
+  box-sizing: border-box;
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 50% 46%, rgba(127, 231, 255, 0.10), transparent 38vmin),
+    var(--vacuo);
+  color: var(--texto);
+  font-family: var(--familia);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hud-root *,
+.hud-root *::before,
+.hud-root *::after {
+  box-sizing: border-box;
+}
+
+.hud-root .invisivel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.hud-root :focus-visible {
+  outline: 2px solid var(--holo);
+  outline-offset: 3px;
+}
+
+/* Órbita: duas colunas apontando para o reator. */
+.orbita {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(16rem, 58vmin) minmax(13rem, 1fr);
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas:
+    "relogio aprov  ."
+    "esq     nucleo dir"
+    "esq     nucleo dir"
+    "dialogo dialogo dialogo";
+  column-gap: calc(var(--passo) * 2.5);
+  row-gap: var(--passo);
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: calc(var(--passo) * 1.5) calc(var(--passo) * 2.5);
+}
+
+.relogio { grid-area: relogio; align-self: start; }
+.relogio p { margin: 0; }
+.hora {
+  font-size: clamp(2.2rem, 5.5vmin, 3.6rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--holo);
+}
+.data {
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  font-stretch: 87.5%;
+  color: var(--texto-calmo);
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(var(--passo) * 1.6);
+}
+.esquerda { grid-area: esq; text-align: right; align-items: flex-end; }
+.direita { grid-area: dir; text-align: left; align-items: flex-start; }
+
+/* Seção sem caixa: só cantoneiras de holograma, abertas para o lado do reator. */
+.secao {
+  position: relative;
+  max-width: 24rem;
+  padding: 0.8rem 1.1rem 0.9rem;
+}
+.secao::before,
+.secao::after {
+  content: "";
+  position: absolute;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 0 solid var(--holo-tenue);
+}
+.direita .secao::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.direita .secao::after { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+.esquerda .secao::before { top: 0; right: 0; border-width: 1px 1px 0 0; }
+.esquerda .secao::after { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+.secao h2 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 400;
+  font-stretch: 75%;
+  letter-spacing: 0.04em;
+  color: var(--holo);
+}
+.secao p {
+  margin: 0;
+  font-size: clamp(1rem, 2vmin, 1.2rem);
+  line-height: 1.4;
+  max-width: 34ch;
+  overflow-wrap: anywhere;
+}
+.secao[data-cego="sim"] h2 { color: var(--falha); }
+.secao[data-cego="sim"] p { color: var(--texto-calmo); }
+.secao[data-cego="sim"]::before,
+.secao[data-cego="sim"]::after { border-color: var(--falha); }
+
+/* Núcleo: a única coisa grande da tela. */
+.nucleo {
+  grid-area: nucleo;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--passo);
+}
+.reator {
+  position: relative;
+  /* Cabe com o relógio, as aprovações e o diálogo na mesma tela (720p ou 4K). */
+  width: max(14rem, min(58vmin, calc(100dvh - 24rem), 100%));
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.reator canvas { width: 100%; height: 100%; display: block; }
+.estado {
+  margin: 0;
+  min-height: 1.4em;
+  font-size: 1.05rem;
+  font-stretch: 87.5%;
+  color: var(--texto-calmo);
+  text-align: center;
+}
+.hud-root[data-estado="ouvindo"] .estado,
+.hud-root[data-estado="falando"] .estado { color: var(--holo); }
+.hud-root[data-estado="erro"] .estado { color: var(--falha); }
+
+/* Aprovações: o que pede o dono entra em âmbar, no alto, e sai quando é decidido. */
+.aprovacoes {
+  grid-area: aprov;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  justify-self: center;
+  width: min(100%, 36rem);
+}
+.pedido {
+  border-left: 3px solid var(--ambar);
+  padding: 0.6rem 0.9rem;
+  background: rgba(255, 181, 71, 0.07);
+  animation: entra 280ms ease-out;
+}
+.pedido p { margin: 0 0 0.5rem; line-height: 1.35; }
+.pedido .acao-nome { color: var(--ambar); font-size: 1.1rem; }
+.pedido .detalhe { color: var(--texto-calmo); font-size: 0.95rem; overflow-wrap: anywhere; }
+.pedido .botoes { display: flex; gap: 0.6rem; }
+.pedido button {
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.45rem 1rem;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.pedido .confirmar { background: var(--ambar); color: var(--vacuo); border: 1px solid var(--ambar); }
+.pedido .recusar { background: transparent; color: var(--texto); border: 1px solid var(--holo-tenue); }
+@keyframes entra { from { opacity: 0; transform: translateY(-6px); } }
+
+/* Diálogo: a última troca e o campo de texto. */
+.dialogo {
+  grid-area: dialogo;
+  justify-self: center;
+  width: min(100%, 52rem);
+  display: grid;
+  gap: 0.4rem;
+}
+.fala { margin: 0; line-height: 1.45; min-height: 1.45em; max-width: 72ch; }
+.fala.voce { color: var(--texto-calmo); font-stretch: 87.5%; }
+.fala.voce:not(:empty)::before { content: "Você: "; color: var(--holo-tenue); }
+.fala.jarvis { font-size: 1.15rem; }
+.fala.jarvis:not(:empty)::before { content: "JARVIS: "; color: var(--holo); }
+.escrever { display: flex; gap: 0.6rem; margin-top: 0.4rem; }
+.escrever input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 1.05rem;
+  color: var(--texto);
+  background: var(--vacuo-fundo);
+  border: 1px solid var(--holo-tenue);
+  border-radius: 2px;
+  padding: 0.55rem 0.8rem;
+}
+.escrever input::placeholder { color: var(--holo-tenue); }
+.escrever button {
+  font: inherit;
+  color: var(--vacuo);
+  background: var(--holo);
+  border: 0;
+  border-radius: 2px;
+  padding: 0.55rem 1.1rem;
+  cursor: pointer;
+}
+
+/* Tablet em pé e celular: reator no alto, o resto empilhado. */
+@media (max-width: 900px) {
+  .orbita {
+    grid-template-columns: 1fr;
+    grid-template-areas: "relogio" "nucleo" "aprov" "esq" "dir" "dialogo";
+    padding: 1rem;
+  }
+  .coluna, .esquerda, .direita { text-align: left; align-items: stretch; }
+  .esquerda .secao::before { left: 0; right: auto; border-width: 1px 0 0 1px; }
+  .esquerda .secao::after { left: 0; right: auto; border-width: 0 0 1px 1px; }
+  .secao { max-width: none; }
+  .reator { width: min(78vw, 24rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pedido { animation: none; }
+}

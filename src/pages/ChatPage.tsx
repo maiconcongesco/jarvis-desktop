@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Plus, Search, Square, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { HoldToTalkButton } from '../components/chat/HoldToTalkButton';
 import { MessageView } from '../components/chat/MessageView';
 import { TracePanel } from '../components/chat/TracePanel';
 import { Button } from '../components/ui/button';
@@ -15,10 +16,15 @@ import {
 } from '../lib/history';
 import {
   enviarFeedback,
+  enviarVoz,
   streamChat,
   textoCanonico,
 } from '../lib/jarvis';
-import { getApiUrl } from '../lib/settings';
+import { getApiUrl, useSettingsStore } from '../lib/settings';
+import {
+  shouldAutoplayFinishedReply,
+  useTtsStore,
+} from '../lib/tts';
 import { getDesktopToken } from '../lib/vault';
 
 export function ChatPage() {
@@ -36,9 +42,15 @@ export function ChatPage() {
   const [draft, setDraft] = useState('');
   const [busca, setBusca] = useState('');
   const [streaming, setStreaming] = useState(false);
+  const [vozBusy, setVozBusy] = useState(false);
   const [traceAberto, setTraceAberto] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const prevStreamingConv = useRef<string | null>(null);
+  const voiceAutoplay = useSettingsStore((s) => s.voiceAutoplay);
+  const speak = useTtsStore((s) => s.speak);
+  const markAutoSpoken = useTtsStore((s) => s.markAutoSpoken);
+  const playBlob = useTtsStore((s) => s.playBlob);
 
   const lista = useMemo(() => buscar(busca), [busca, conversations, buscar]);
   const ativa = conversations.find((c) => c.id === activeId) ?? null;
@@ -71,6 +83,64 @@ export function ChatPage() {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [ativa?.messages, streaming]);
+
+  useEffect(() => {
+    if (streaming && activeId) prevStreamingConv.current = activeId;
+  }, [streaming, activeId]);
+
+  useEffect(() => {
+    if (!voiceAutoplay || streaming) return;
+    const last = ativa?.messages[ativa.messages.length - 1];
+    if (
+      !shouldAutoplayFinishedReply(
+        prevStreamingConv.current,
+        activeId,
+        streaming,
+        last,
+        useTtsStore.getState().autoSpokenId,
+      )
+    ) {
+      return;
+    }
+    if (!last?.content) return;
+    markAutoSpoken(last.id);
+    void speak(last.id, last.content);
+  }, [streaming, activeId, ativa?.messages, voiceAutoplay, speak, markAutoSpoken]);
+
+  const enviarVozTurno = async (wav: Blob) => {
+    if (streaming || vozBusy) return;
+    if (!temToken) {
+      toast.error('Configure o token em Configurações.');
+      return;
+    }
+    let convId = activeId;
+    if (!convId) convId = nova();
+    setVozBusy(true);
+    try {
+      const r = await enviarVoz(wav, { userRef: 'dono' });
+      const userId = generateMessageId();
+      const assistantId = generateMessageId();
+      appendMessage(convId, {
+        id: userId,
+        role: 'user',
+        content: r.transcript || '(voz)',
+        createdAt: Date.now(),
+      });
+      appendMessage(convId, {
+        id: assistantId,
+        role: 'assistant',
+        content: r.text,
+        createdAt: Date.now(),
+        trace_id: r.trace_id || undefined,
+        agent: r.agent || undefined,
+      });
+      await playBlob(assistantId, r.audio);
+    } catch (e) {
+      toast.error(mensagemErroRede(e));
+    } finally {
+      setVozBusy(false);
+    }
+  };
 
   const enviar = async () => {
     const texto = draft.trim();
@@ -288,7 +358,7 @@ export function ChatPage() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Fale com o JARVIS…"
-            disabled={streaming}
+            disabled={streaming || vozBusy}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -296,12 +366,22 @@ export function ChatPage() {
               }
             }}
           />
+          <HoldToTalkButton
+            disabled={streaming || vozBusy || !temToken}
+            onTooShort={() => toast.message('Segure um pouco mais enquanto fala')}
+            onError={(m) => toast.error(m)}
+            onWav={(wav) => void enviarVozTurno(wav)}
+          />
           {streaming ? (
             <Button type="button" variant="outline" onClick={parar}>
               <Square size={14} /> Parar
             </Button>
           ) : (
-            <Button type="button" onClick={() => void enviar()} disabled={!draft.trim()}>
+            <Button
+              type="button"
+              onClick={() => void enviar()}
+              disabled={!draft.trim() || vozBusy}
+            >
               Enviar
             </Button>
           )}

@@ -9,7 +9,7 @@ Repo: https://github.com/maiconcongesco/jarvis-desktop
 |---|---|
 | `main` | espelha `origin/main` |
 | `feat/f4-cliente-api` | cliente API, cofre, chat stream (esta entrega) |
-| `feat/f5-*` | voz + HUD (próxima) |
+| `feat/f5-voz-hud` | voz + HUD (esta fase) |
 
 Worktree sugerida: `git worktree add ../jarvis-desktop-wt-f5 -b feat/f5-voz-hud origin/main`
 

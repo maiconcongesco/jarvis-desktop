@@ -1,28 +1,29 @@
 # Jarvis Desktop
 
 Cliente nativo (Tauri v2 + React) do [JARVIS](https://github.com/maiconcongesco/jarvis)
-para Windows. O c√©rebro permanece na API da VM `jarvis-01`; este app s√≥ conversa
+para Windows. O cÈrebro permanece na API da VM `jarvis-01`; este app sÛ conversa
 com ela.
 
-Spec: no reposit√≥rio `jarvis`,
+Spec: no repositÛrio `jarvis`,
 `docs/superpowers/specs/2026-10-14-jarvis-desktop-design.md`.
 
-## Fase atual (F4)
+## Fase atual (F5)
 
-Cliente tipado (`src/lib/jarvis.ts`) para `/v1/chat/stream` (Bearer desktop),
-cofre do token (keyring / sess√£o), chat com frases + cart√µes de ferramenta,
-hist√≥rico local, rodap√© (agente/modelo/lat√™ncia/custo), painel de trace e
-feedback üëç/üëé. Voz, HUD, bandeja e updater: F5‚ÄìF7.
+Voz e HUD:
 
-Toolchain front alinhado ao pin OpenJarvis: **Vite 8** + `@vitejs/plugin-react` 6
-+ **vitest 5**. Componentes herdados ainda n√£o portados ficam em `src/_upstream/`.
+- Segurar para falar (conversa + HUD / espaÁo) ? WAV PCM 16 kHz ? `POST /v1/voice`
+- Ler em voz alta por mensagem + autoplay opcional ? `POST /v1/tts` (um ·udio por vez)
+- Tela HUD com reator, painÈis `GET /v1/hud/dados`, aprovaÁıes (negar / confirmar)
 
-## Bloqueio local (esta√ß√£o)
+F4 permanece: chat stream, cofre, histÛrico, trace, feedback. Bandeja/atalho/sino: F6.
+Updater assinado: F7.
+
+## Bloqueio local (estaÁ„o)
 
 1. **Reiniciar o PC** se o Visual Studio Build Tools 2022 acabou de instalar
    (pede reboot para o MSVC).
-2. Depois, um √∫nico `npm install` na raiz (evite installs paralelos ‚Äî no path
-   longo do GitHub o AV √†s vezes corrompe `node_modules` com `TAR_ENTRY_ERROR`).
+2. Depois, um ˙nico `npm install` na raiz (evite installs paralelos ? no path
+   longo do GitHub o AV ‡s vezes corrompe `node_modules` com `TAR_ENTRY_ERROR`).
 
 ```powershell
 npm install
@@ -31,14 +32,15 @@ npm test
 npm run build
 ```
 
-N√£o rode `cargo`/`tauri` at√© o reboot concluir o MSVC.
+N„o rode `cargo`/`tauri` atÈ o reboot concluir o MSVC. Prefira validar via CI
+do GitHub se o toolchain local falhar.
 
 ## Requisitos
 
-- Node ‚â• 22.22 e npm ‚â• 11.19
+- Node ? 22.22 e npm ? 11.19
 - Rust stable + Visual Studio Build Tools (workload C++) no Windows
-- API do JARVIS alcan√ß√°vel (padr√£o `http://192.168.20.210:8000`)
-- Token `JARVIS_DESKTOP_TOKEN` (OpenBao ‚Üí Configura√ß√µes do app; nunca no Git)
+- API do JARVIS alcanÁ·vel (padr„o `http://192.168.20.210:8000`)
+- Token `JARVIS_DESKTOP_TOKEN` (OpenBao ? ConfiguraÁıes do app; nunca no Git)
 
 ## Desenvolvimento
 
@@ -49,21 +51,20 @@ npm test
 npm run dev
 ```
 
-App nativo (ap√≥s reboot + MSVC ok):
+App nativo (apÛs reboot + MSVC ok):
 
 ```powershell
 npm run tauri dev
 ```
 
 No `npm run dev`, o Vite faz proxy de `/v1` e `/healthz`. O token fica em
-`sessionStorage` (s√≥ sess√£o). No app Tauri, o token vai ao Credential Manager.
+`sessionStorage` (sÛ sess„o). No app Tauri, o token vai ao Credential Manager.
 
 ## Origem
 
-Fork **s√≥ do front-end** do [OpenJarvis](https://github.com/open-jarvis/OpenJarvis)
-no commit fixado em `NOTICE`, sem hist√≥rico git. Licen√ßa Apache-2.0.
+Fork **sÛ do front-end** do [OpenJarvis](https://github.com/open-jarvis/OpenJarvis)
+no commit fixado em `NOTICE`, sem histÛrico git. LicenÁa Apache-2.0.
 
 ## Remote
 
-https://github.com/maiconcongesco/jarvis-desktop ó worktrees e pos-reboot: `docs/F3-ENCAIXE-REMOTE.md`.
-
+https://github.com/maiconcongesco/jarvis-desktop ? worktrees e pÛs-reboot: `docs/F3-ENCAIXE-REMOTE.md`.

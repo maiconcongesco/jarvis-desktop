@@ -16,8 +16,10 @@ import {
 export function SettingsPage() {
   const apiUrl = useSettingsStore((s) => s.apiUrl);
   const theme = useSettingsStore((s) => s.theme);
+  const voiceAutoplay = useSettingsStore((s) => s.voiceAutoplay);
   const setApiUrl = useSettingsStore((s) => s.setApiUrl);
   const setTheme = useSettingsStore((s) => s.setTheme);
+  const setVoiceAutoplay = useSettingsStore((s) => s.setVoiceAutoplay);
   const exportar = useHistoryStore((s) => s.exportar);
   const importar = useHistoryStore((s) => s.importar);
   const limpar = useHistoryStore((s) => s.limpar);
@@ -173,6 +175,27 @@ export function SettingsPage() {
           <option value="dark">Escuro</option>
           <option value="light">Claro</option>
         </select>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Voz
+        </label>
+        <label
+          className="flex items-center gap-2 text-sm"
+          style={{ color: 'var(--color-text)' }}
+        >
+          <input
+            type="checkbox"
+            checked={voiceAutoplay}
+            onChange={(e) => setVoiceAutoplay(e.target.checked)}
+          />
+          Ler respostas em voz alta automaticamente (TTS)
+        </label>
+        <p className="text-xs opacity-70" style={{ color: 'var(--color-text)' }}>
+          Segurar para falar usa `/v1/voice`. O botão de alto-falante em cada
+          mensagem chama `/v1/tts`. Um áudio por vez.
+        </p>
       </section>
 
       <section className="flex flex-col gap-2">
