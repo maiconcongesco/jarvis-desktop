@@ -41,5 +41,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      # generate_context! exige frontendDist; dist/ é gitignored e o job rust não roda npm build.
+      - name: Stub frontendDist para cargo
+        working-directory: .
+        run: |
+          mkdir -p dist
+          printf '%s\n' '<!doctype html><html><head><meta charset="utf-8"><title>ci</title></head><body></body></html>' > dist/index.html
       - run: cargo test
       - run: cargo check
