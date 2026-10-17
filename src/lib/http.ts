@@ -1,29 +1,12 @@
 /**
- * Fetch que prefere o plugin HTTP do Tauri (sem CORS) e cai no fetch global
- * no navegador / vitest / `npm run dev`.
+ * Fetch usado pelo cliente da API.
+ *
+ * Decisão: usar o fetch do webview (sem tauri-plugin-http). O plugin nunca foi
+ * registrado no Rust e o import dinâmico ficava sem resolver no bundle, então
+ * o app já caía neste caminho. Consequências: a API precisa aceitar CORS da
+ * origem do app e o host tem de constar no `connect-src` do CSP
+ * (`src-tauri/tauri.conf.json`; ver `lib/apiUrl.ts`).
  */
-
-type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
-
-async function tauriFetch(): Promise<FetchLike | null> {
-  if (typeof window === 'undefined' || !('__TAURI_INTERNALS__' in window)) {
-    return null;
-  }
-  try {
-    const mod = (await import(
-      /* @vite-ignore */ '@tauri-apps/plugin-http'
-    )) as { fetch: FetchLike };
-    return mod.fetch;
-  } catch {
-    return null;
-  }
-}
-
-export async function jarvisFetch(
-  input: string,
-  init?: RequestInit,
-): Promise<Response> {
-  const viaTauri = await tauriFetch();
-  if (viaTauri) return viaTauri(input, init);
+export function jarvisFetch(input: string, init?: RequestInit): Promise<Response> {
   return globalThis.fetch(input, init);
 }

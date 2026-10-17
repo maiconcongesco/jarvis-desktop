@@ -29,9 +29,14 @@ export function consumirSse(buffer: string): { frames: SseFrame[]; resto: string
   return { frames, resto };
 }
 
+/**
+ * Lê o corpo SSE frame a frame. `aoReceber` é chamado a cada pedaço de bytes
+ * (inclusive keep-alive sem frame), útil para renovar timeout de inatividade.
+ */
 export async function* lerSse(
   response: Response,
   signal?: AbortSignal,
+  aoReceber?: () => void,
 ): AsyncGenerator<SseFrame> {
   if (!response.body) {
     throw new Error('Resposta SSE sem corpo.');
@@ -39,15 +44,24 @@ export async function* lerSse(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  // Destrava um read() pendente quando o signal aborta no meio da espera.
+  const onAbort = () => {
+    reader.cancel().catch(() => {});
+  };
+  signal?.addEventListener('abort', onAbort);
 
   try {
     while (true) {
       if (signal?.aborted) {
-        await reader.cancel();
+        await reader.cancel().catch(() => {});
         throw new DOMException('Aborted', 'AbortError');
       }
       const { done, value } = await reader.read();
+      if (signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
       if (done) break;
+      aoReceber?.();
       buffer += decoder.decode(value, { stream: true });
       const { frames, resto } = consumirSse(buffer);
       buffer = resto;
@@ -62,6 +76,7 @@ export async function* lerSse(
       }
     }
   } finally {
+    signal?.removeEventListener('abort', onAbort);
     reader.releaseLock();
   }
 }

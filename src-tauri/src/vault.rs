@@ -25,9 +25,7 @@ pub fn set_desktop_token(token: String) -> Result<(), String> {
     if limpo.is_empty() {
         return clear_desktop_token();
     }
-    entry()?
-        .set_password(limpo)
-        .map_err(|e| e.to_string())
+    entry()?.set_password(limpo).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

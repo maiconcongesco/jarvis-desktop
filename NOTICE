@@ -31,6 +31,7 @@ What changed for Jarvis Desktop:
     local history, trace panel (plugin HTTP Tauri fica pós-reboot)
   - Cargo.toml license set to Apache-2.0 (upstream Cargo.toml said MIT
     while the project LICENSE is Apache-2.0)
-  - Updater disabled until jarvis-desktop has its own signed release pipeline
+  - F7: updater re-enabled against jarvis-desktop's own signed (minisign)
+    GitHub Releases pipeline; no tauri-plugin-http (webview fetch + CSP)
 
 See LICENSE for the full Apache-2.0 text.
