@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_API_URL, getApiUrl, loadSettings, useSettingsStore } from './settings';
+import {
+  DEFAULT_API_URL,
+  DEFAULT_SHORTCUT,
+  getApiUrl,
+  loadSettings,
+  useSettingsStore,
+} from './settings';
 
 describe('settings', () => {
   beforeEach(() => {
@@ -8,6 +14,8 @@ describe('settings', () => {
       apiUrl: DEFAULT_API_URL,
       theme: 'system',
       voiceAutoplay: false,
+      autostart: true,
+      globalShortcut: DEFAULT_SHORTCUT,
     });
   });
 
@@ -29,5 +37,23 @@ describe('settings', () => {
     useSettingsStore.setState({ voiceAutoplay: false });
     const loaded = loadSettings();
     expect(loaded.voiceAutoplay).toBe(true);
+  });
+
+  it('autostart padrão ligado e atalho Ctrl+Espaço', () => {
+    const loaded = loadSettings();
+    expect(loaded.autostart).toBe(true);
+    expect(loaded.globalShortcut).toBe(DEFAULT_SHORTCUT);
+  });
+
+  it('persiste autostart e atalho', () => {
+    useSettingsStore.getState().setAutostart(false);
+    useSettingsStore.getState().setGlobalShortcut('Alt+J');
+    useSettingsStore.setState({
+      autostart: true,
+      globalShortcut: DEFAULT_SHORTCUT,
+    });
+    const loaded = loadSettings();
+    expect(loaded.autostart).toBe(false);
+    expect(loaded.globalShortcut).toBe('Alt+J');
   });
 });

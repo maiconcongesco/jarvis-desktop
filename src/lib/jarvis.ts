@@ -246,6 +246,32 @@ export function textoCanonico(exibido: string, fimText: string): string {
   return fimText;
 }
 
+export interface AprovacaoPendente {
+  id: string;
+  ferramenta: string;
+  parametros: Record<string, unknown>;
+  limite: string;
+  solicitada_em: string;
+  trace_id: string;
+}
+
+export async function listarAprovacoes(
+  timeoutMs = 10_000,
+): Promise<AprovacaoPendente[]> {
+  const base = getApiUrl();
+  const { signal, limpar } = comTimeout(undefined, timeoutMs);
+  try {
+    const res = await jarvisFetch(`${base}/v1/aprovacoes?status=pendente`, {
+      headers: await authHeaders(),
+      signal,
+    });
+    if (!res.ok) throw await parseErro(res);
+    return (await res.json()) as AprovacaoPendente[];
+  } finally {
+    limpar();
+  }
+}
+
 export interface RespostaVoz {
   transcript: string;
   text: string;
