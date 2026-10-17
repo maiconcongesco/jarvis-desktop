@@ -18,8 +18,9 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      # Sem package-lock na F3 (lock gerado após reboot + npm install na estação).
-      - run: npm install --no-fund --no-audit
+      # setup-node traz npm 10; o package.json exige npm >=11.19 (engine-strict).
+      - run: npm install -g npm@11.19.0
+      - run: npm ci --no-fund --no-audit
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
@@ -40,5 +41,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      # generate_context! exige ../dist a partir de src-tauri; dist/ é gitignored.
+      - name: Stub frontendDist para cargo
+        run: |
+          mkdir -p ../dist
+          printf '%s\n' '<!doctype html><html><head><meta charset="utf-8"><title>ci</title></head><body></body></html>' > ../dist/index.html
       - run: cargo test
       - run: cargo check

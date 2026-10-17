@@ -26,6 +26,9 @@ What changed for Jarvis Desktop:
     GetStarted dashboards, and OpenJarvis branding
   - App talks only to the existing JARVIS API on the LAN/VPN;
     no local agent runtime
+  - F4: src/lib/jarvis.ts client (/v1/chat/stream, traces, feedback),
+    keyring vault commands, chat UI with streaming phrases + tool cards,
+    local history, trace panel (plugin HTTP Tauri fica pós-reboot)
   - Cargo.toml license set to Apache-2.0 (upstream Cargo.toml said MIT
     while the project LICENSE is Apache-2.0)
   - Updater disabled until jarvis-desktop has its own signed release pipeline

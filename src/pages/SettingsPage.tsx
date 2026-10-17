@@ -1,37 +1,112 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { mensagemErroRede } from '../lib/errors';
 import { checkHealth } from '../lib/health';
+import { useHistoryStore } from '../lib/history';
+import { testarAutenticacao } from '../lib/jarvis';
 import { useSettingsStore, type Theme } from '../lib/settings';
+import {
+  clearDesktopToken,
+  getDesktopToken,
+  setDesktopToken,
+} from '../lib/vault';
 
 export function SettingsPage() {
   const apiUrl = useSettingsStore((s) => s.apiUrl);
   const theme = useSettingsStore((s) => s.theme);
   const setApiUrl = useSettingsStore((s) => s.setApiUrl);
   const setTheme = useSettingsStore((s) => s.setTheme);
-  const [draft, setDraft] = useState(apiUrl);
+  const exportar = useHistoryStore((s) => s.exportar);
+  const importar = useHistoryStore((s) => s.importar);
+  const limpar = useHistoryStore((s) => s.limpar);
+
+  const [draftUrl, setDraftUrl] = useState(apiUrl);
+  const [draftToken, setDraftToken] = useState('');
+  const [temToken, setTemToken] = useState(false);
   const [testing, setTesting] = useState(false);
 
-  const save = () => {
-    setApiUrl(draft.trim() || apiUrl);
+  useEffect(() => {
+    setDraftUrl(apiUrl);
+  }, [apiUrl]);
+
+  useEffect(() => {
+    void getDesktopToken().then((t) => {
+      setTemToken(Boolean(t));
+      setDraftToken('');
+    });
+  }, []);
+
+  const saveUrl = () => {
+    setApiUrl(draftUrl.trim() || apiUrl);
     toast.success('URL salva');
   };
 
+  const saveToken = async () => {
+    if (!draftToken.trim()) {
+      toast.error('Cole o token (não fica vazio). Use Limpar para remover.');
+      return;
+    }
+    await setDesktopToken(draftToken);
+    setDraftToken('');
+    setTemToken(true);
+    toast.success('Token guardado no cofre da sessão/Credential Manager');
+  };
+
+  const limparToken = async () => {
+    await clearDesktopToken();
+    setTemToken(false);
+    setDraftToken('');
+    toast.success('Token removido');
+  };
+
   const test = async () => {
-    setApiUrl(draft.trim() || apiUrl);
+    setApiUrl(draftUrl.trim() || apiUrl);
+    if (draftToken.trim()) {
+      await setDesktopToken(draftToken);
+      setDraftToken('');
+      setTemToken(true);
+    }
     setTesting(true);
     try {
       const ok = await checkHealth();
-      if (ok) toast.success('Conexão ok — /healthz respondeu');
-      else toast.error('O JARVIS não respondeu. Confira a URL e a VPN/LAN.');
+      if (!ok) {
+        toast.error('O JARVIS não respondeu. Confira a URL e a VPN/LAN.');
+        return;
+      }
+      await testarAutenticacao();
+      toast.success('Conexão ok — /healthz e token aceitos');
+    } catch (e) {
+      toast.error(mensagemErroRede(e));
     } finally {
       setTesting(false);
     }
   };
 
+  const exportHist = () => {
+    const blob = new Blob([exportar()], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jarvis-historico-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importHist = async (file: File | null) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      importar(text);
+      toast.success('Histórico importado');
+    } catch (e) {
+      toast.error(mensagemErroRede(e));
+    }
+  };
+
   return (
-    <div className="max-w-lg mx-auto p-6 flex flex-col gap-6">
+    <div className="max-w-lg mx-auto p-6 flex flex-col gap-6 overflow-y-auto h-full">
       <h1 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>
         Configurações
       </h1>
@@ -41,21 +116,47 @@ export function SettingsPage() {
           URL da API
         </label>
         <Input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          value={draftUrl}
+          onChange={(e) => setDraftUrl(e.target.value)}
           placeholder="http://192.168.20.210:8000"
         />
-        <div className="flex gap-2">
-          <Button type="button" onClick={save}>
-            Salvar
+        <Button type="button" onClick={saveUrl}>
+          Salvar URL
+        </Button>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Token desktop (Bearer)
+        </label>
+        <Input
+          type="password"
+          value={draftToken}
+          onChange={(e) => setDraftToken(e.target.value)}
+          placeholder={temToken ? '•••••••• (já configurado — cole para trocar)' : 'Cole o token'}
+          autoComplete="off"
+        />
+        <p className="text-xs opacity-70" style={{ color: 'var(--color-text)' }}>
+          No app nativo o token vai ao Credential Manager. No navegador (`npm run
+          dev`) fica só na sessão — nunca em localStorage. Valor vem do OpenBao
+          (`JARVIS_DESKTOP_TOKEN`), não cole em commits.
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          <Button type="button" onClick={() => void saveToken()}>
+            Guardar token
           </Button>
-          <Button type="button" variant="outline" disabled={testing} onClick={() => void test()}>
+          <Button type="button" variant="outline" onClick={() => void limparToken()}>
+            Limpar token
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={testing}
+            onClick={() => void test()}
+          >
             {testing ? 'Testando…' : 'Testar conexão'}
           </Button>
         </div>
-        <p className="text-xs opacity-70" style={{ color: 'var(--color-text)' }}>
-          O token do app fica no Credential Manager (F4). Nesta fase só a URL é configurável.
-        </p>
       </section>
 
       <section className="flex flex-col gap-2">
@@ -72,6 +173,43 @@ export function SettingsPage() {
           <option value="dark">Escuro</option>
           <option value="light">Claro</option>
         </select>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Dados (histórico local)
+        </label>
+        <div className="flex gap-2 flex-wrap">
+          <Button type="button" variant="outline" onClick={exportHist}>
+            Exportar JSON
+          </Button>
+          <label className="inline-flex items-center">
+            <span
+              className="inline-flex h-8 cursor-pointer items-center rounded-lg border px-2.5 text-sm"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+            >
+              Importar JSON
+              <input
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => void importHist(e.target.files?.[0] ?? null)}
+              />
+            </span>
+          </label>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (confirm('Apagar todo o histórico local?')) {
+                limpar();
+                toast.success('Histórico limpo');
+              }
+            }}
+          >
+            Limpar histórico
+          </Button>
+        </div>
       </section>
     </div>
   );
