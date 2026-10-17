@@ -1,4 +1,4 @@
-export function SobrePage() {
+﻿export function SobrePage() {
   return (
     <div className="max-w-lg mx-auto p-6 flex flex-col gap-4 text-sm" style={{ color: 'var(--color-text)' }}>
       <h1 className="text-xl font-semibold">Sobre o Jarvis Desktop</h1>
@@ -18,7 +18,7 @@ export function SobrePage() {
         </a>{' '}
         (Apache-2.0). Detalhes em <code>NOTICE</code>.
       </p>
-      <p className="opacity-70">Versão 0.1.0 · updater assinado (F7)</p>
+      <p className="opacity-70">Versão 0.1.1 · updater assinado (F7)</p>
     </div>
   );
 }
