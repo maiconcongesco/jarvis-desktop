@@ -21,6 +21,7 @@
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
     "process:default",
-    "dialog:allow-open"
+    "dialog:allow-open",
+    "updater:default"
   ]
 }

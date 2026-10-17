@@ -1,8 +1,8 @@
 //! Jarvis Desktop — casca Tauri.
 //!
 //! Sem sidecar, sem shell e sem boot de backend local: o cérebro fica na API
-//! da VM. F6: bandeja, autostart (--hidden), janela flutuante e notificações
-//! (plugins). Cofre (keyring) na F4.
+//! da VM. F6: bandeja, autostart (--hidden), janela flutuante e notificações.
+//! F7: updater assinado (minisign) via GitHub Releases.
 
 mod flutuante;
 mod tray;
@@ -33,6 +33,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // tauri-plugin-http: ligar pós-reboot (cargo update + capability); até lá o
         // front usa fetch (Vite proxy no dev / webview na LAN).
         .plugin(tauri_plugin_autostart::init(
