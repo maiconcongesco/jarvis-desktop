@@ -1,0 +1,33 @@
+Jarvis Desktop
+Copyright 2026 Prokapa / maiconcongesco
+
+This product includes software derived from OpenJarvis
+(https://github.com/open-jarvis/OpenJarvis), Copyright The OpenJarvis Authors,
+licensed under the Apache License, Version 2.0.
+
+Pinned upstream commit (frontend/ only, no git history copied):
+  f9e9d5d28d9e58d7fe601c331fc15a02fad32b2c
+  (chore: update clone traffic data [skip ci])
+
+What came from OpenJarvis (adapted or staged):
+  - Tauri v2 desktop shell ideas (tray/autostart/shortcut plugins)
+  - Visual kit under src/components/ui/* and src/index.css (HUD theme tokens)
+  - Upstream keep-list parked in src/_upstream/ for F4+ adaptation:
+    Chat (MessageBubble, ChatArea, InputArea, ToolCallCard, XRayFooter,
+    StreamingDots, AudioPlayer, MicButton, SpeakMessageButton),
+    Sidebar, ApprovalBell, Layout, SystemPulse, UpdateChecker,
+    LogsPage, sse/tts/tool-call helpers, types
+
+What changed for Jarvis Desktop:
+  - productName "Jarvis", identifier com.prokapa.jarvis-desktop
+  - UI strings in Brazilian Portuguese (pt-BR)
+  - Removed telemetry (posthog), Supabase, local Ollama/sidecar boot,
+    shell plugin permissions, PWA, Deep Research, Agents/DataSources/
+    GetStarted dashboards, and OpenJarvis branding
+  - App talks only to the existing JARVIS API on the LAN/VPN;
+    no local agent runtime
+  - Cargo.toml license set to Apache-2.0 (upstream Cargo.toml said MIT
+    while the project LICENSE is Apache-2.0)
+  - Updater disabled until jarvis-desktop has its own signed release pipeline
+
+See LICENSE for the full Apache-2.0 text.
