@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, NavLink, useLocation } from 'react-router';
 import { ApprovalBell } from './components/ApprovalBell';
+import { UpdateChecker } from './components/UpdateChecker';
 import { Toaster } from './components/ui/sonner';
 import { bootNativeShell } from './lib/native';
 import { loadSettings, useSettingsStore } from './lib/settings';
@@ -13,6 +14,7 @@ import { SobrePage } from './pages/SobrePage';
 function ShellPrincipal() {
   return (
     <>
+      <UpdateChecker />
       <header
         className="flex items-center gap-4 px-4 py-2 shrink-0 relative z-10"
         style={{

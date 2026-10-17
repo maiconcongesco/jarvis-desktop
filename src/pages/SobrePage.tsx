@@ -18,7 +18,7 @@ export function SobrePage() {
         </a>{' '}
         (Apache-2.0). Detalhes em <code>NOTICE</code>.
       </p>
-      <p className="opacity-70">Versão 0.1.0-dev · fase F3</p>
+      <p className="opacity-70">Versão 0.1.0 · updater assinado (F7)</p>
     </div>
   );
 }

@@ -10,3 +10,9 @@ src-tauri/gen/
 .vscode/
 .idea/
 tsconfig.tsbuildinfo
+
+# Chaves do updater (nunca no Git)
+*.key
+*.key.pub
+*.password
+
