@@ -151,8 +151,9 @@ export function HudPage() {
   }, [ttsState, estado, definirEstado]);
 
   useEffect(() => {
-    gravador.current.setLevelListener((n) => setNivel(n));
-    return () => gravador.current.setLevelListener(null);
+    const g = gravador.current;
+    g.setLevelListener((n) => setNivel(n));
+    return () => g.setLevelListener(null);
   }, []);
 
   // Cancela voz/stream em andamento ao sair do HUD.

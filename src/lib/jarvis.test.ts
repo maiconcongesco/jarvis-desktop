@@ -15,52 +15,7 @@ import {
 } from './jarvis';
 import { DEFAULT_API_URL, DEFAULT_SHORTCUT, useSettingsStore } from './settings';
 import { _resetVaultMemoria, setDesktopToken } from './vault';
-
-function sseBody(chunks: string[]): ReadableStream<Uint8Array> {
-  const encoder = new TextEncoder();
-  let i = 0;
-  return new ReadableStream({
-    pull(controller) {
-      if (i >= chunks.length) {
-        controller.close();
-        return;
-      }
-      controller.enqueue(encoder.encode(chunks[i++]));
-    },
-  });
-}
-
-/** Entrega um pedaço a cada `intervaloMs`. */
-function sseBodyLento(chunks: string[], intervaloMs: number): ReadableStream<Uint8Array> {
-  const encoder = new TextEncoder();
-  let i = 0;
-  return new ReadableStream({
-    async pull(controller) {
-      await new Promise((r) => setTimeout(r, intervaloMs));
-      if (i >= chunks.length) {
-        controller.close();
-        return;
-      }
-      controller.enqueue(encoder.encode(chunks[i++]));
-    },
-  });
-}
-
-/** Entrega um pedaço e depois fica parado (nunca fecha). */
-function sseBodyTravado(primeiro: string): ReadableStream<Uint8Array> {
-  const encoder = new TextEncoder();
-  let enviado = false;
-  return new ReadableStream({
-    pull(controller) {
-      if (!enviado) {
-        enviado = true;
-        controller.enqueue(encoder.encode(primeiro));
-        return;
-      }
-      return new Promise<void>(() => {});
-    },
-  });
-}
+import { sseBody, sseBodyLento, sseBodyTravado } from '../test/sse';
 
 describe('jarvis client', () => {
   beforeEach(async () => {

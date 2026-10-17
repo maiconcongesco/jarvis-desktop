@@ -88,7 +88,7 @@ async function playFromBlob(id: string, blob: Blob, mine: number): Promise<void>
   if (mine === token) useTtsStore.setState({ state: 'speaking', speakingId: id });
 }
 
-export const useTtsStore = create<TtsStore>((set, get) => ({
+export const useTtsStore = create<TtsStore>((set) => ({
   state: 'idle',
   speakingId: null,
   error: null,
