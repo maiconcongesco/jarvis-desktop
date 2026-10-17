@@ -21,6 +21,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
-  "exclude": ["src/_upstream", "src/components/Desktop"]
+  "include": ["src"]
 }

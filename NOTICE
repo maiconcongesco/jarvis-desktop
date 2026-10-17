@@ -12,11 +12,10 @@ Pinned upstream commit (frontend/ only, no git history copied):
 What came from OpenJarvis (adapted or staged):
   - Tauri v2 desktop shell ideas (tray/autostart/shortcut plugins)
   - Visual kit under src/components/ui/* and src/index.css (HUD theme tokens)
-  - Upstream keep-list parked in src/_upstream/ for F4+ adaptation:
-    Chat (MessageBubble, ChatArea, InputArea, ToolCallCard, XRayFooter,
-    StreamingDots, AudioPlayer, MicButton, SpeakMessageButton),
-    Sidebar, ApprovalBell, Layout, SystemPulse, UpdateChecker,
-    LogsPage, sse/tts/tool-call helpers, types
+  - Upstream keep-list (Chat, Sidebar, ApprovalBell, Layout, SystemPulse,
+    UpdateChecker, LogsPage, sse/tts/tool-call helpers, types) was adapted in
+    F4-F7 into src/components and src/pages; the staging copy under
+    src/_upstream/ has been removed
 
 What changed for Jarvis Desktop:
   - productName "Jarvis", identifier com.prokapa.jarvis-desktop
