@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+      # setup-node traz npm 10; o package.json exige npm >=11.19 (engine-strict).
+      - run: npm install -g npm@11.19.0
       - run: npm ci --no-fund --no-audit
       - run: npm run typecheck
       - run: npm test
