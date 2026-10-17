@@ -49,4 +49,5 @@ jobs:
           releaseDraft: true
           prerelease: false
           updaterJsonPreferNsis: true
-          uploadUpdaterJson: true
+          # tauri-action@v0 usa includeUpdaterJson (não uploadUpdaterJson).
+          includeUpdaterJson: true
