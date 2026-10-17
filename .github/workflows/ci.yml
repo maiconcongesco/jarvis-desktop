@@ -18,7 +18,8 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - run: npm ci
+      # Sem package-lock na F3 (lock gerado após reboot + npm install na estação).
+      - run: npm install --no-fund --no-audit
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
