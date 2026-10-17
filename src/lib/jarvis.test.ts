@@ -4,6 +4,8 @@ import {
   decodificarCabecalho,
   enviarFeedback,
   enviarVoz,
+  executarAprovacao,
+  listarAprovacoes,
   negarAprovacao,
   obterHudDados,
   obterTrace,
@@ -11,7 +13,7 @@ import {
   streamChat,
   textoCanonico,
 } from './jarvis';
-import { DEFAULT_API_URL, useSettingsStore } from './settings';
+import { DEFAULT_API_URL, DEFAULT_SHORTCUT, useSettingsStore } from './settings';
 import { _resetVaultMemoria, setDesktopToken } from './vault';
 
 function sseBody(chunks: string[]): ReadableStream<Uint8Array> {
@@ -34,6 +36,8 @@ describe('jarvis client', () => {
       apiUrl: DEFAULT_API_URL,
       theme: 'system',
       voiceAutoplay: false,
+      autostart: true,
+      globalShortcut: DEFAULT_SHORTCUT,
     });
     _resetVaultMemoria();
     sessionStorage.clear();
@@ -198,5 +202,31 @@ describe('jarvis client', () => {
 
     await negarAprovacao('a1');
     expect(String(fetchMock.mock.calls[2]![0])).toContain('/v1/aprovacoes/a1/negar');
+  });
+
+  it('listar e executar aprovações', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              id: 'a1',
+              ferramenta: 'casa.acionar',
+              parametros: { entity_id: 'light.x' },
+              limite: 'casa_escrita',
+              solicitada_em: '2026-10-17T12:00:00Z',
+              trace_id: 't1',
+            },
+          ]),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: 'ok' }), { status: 200 }));
+
+    const lista = await listarAprovacoes();
+    expect(lista).toHaveLength(1);
+    expect(lista[0]!.ferramenta).toBe('casa.acionar');
+    await executarAprovacao('a1');
+    expect(String(vi.mocked(fetch).mock.calls[1]![0])).toContain('/v1/aprovacoes/a1/executar');
   });
 });

@@ -1,29 +1,18 @@
 import { useEffect } from 'react';
-import { Routes, Route, NavLink } from 'react-router';
+import { Routes, Route, NavLink, useLocation } from 'react-router';
+import { ApprovalBell } from './components/ApprovalBell';
 import { Toaster } from './components/ui/sonner';
+import { bootNativeShell } from './lib/native';
+import { loadSettings, useSettingsStore } from './lib/settings';
 import { ChatPage } from './pages/ChatPage';
+import { FloatingPage } from './pages/FloatingPage';
 import { HudPage } from './pages/HudPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SobrePage } from './pages/SobrePage';
-import { loadSettings, useSettingsStore } from './lib/settings';
 
-export default function App() {
-  const theme = useSettingsStore((s) => s.theme);
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('dark', 'light');
-    if (theme === 'dark') root.classList.add('dark');
-    else if (theme === 'light') root.classList.add('light');
-  }, [theme]);
-
+function ShellPrincipal() {
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden relative">
-      <div className="hud-backdrop" aria-hidden="true" />
+    <>
       <header
         className="flex items-center gap-4 px-4 py-2 shrink-0 relative z-10"
         style={{
@@ -37,7 +26,7 @@ export default function App() {
         >
           Jarvis
         </span>
-        <nav className="flex gap-3 text-sm">
+        <nav className="flex gap-3 text-sm flex-1">
           <NavLink
             to="/"
             end
@@ -76,6 +65,7 @@ export default function App() {
             Sobre
           </NavLink>
         </nav>
+        <ApprovalBell />
       </header>
       <main className="flex-1 min-h-0 relative z-10">
         <Routes>
@@ -86,6 +76,39 @@ export default function App() {
         </Routes>
       </main>
       <Toaster />
+    </>
+  );
+}
+
+export default function App() {
+  const theme = useSettingsStore((s) => s.theme);
+  const location = useLocation();
+  const flutuante = location.pathname === '/flutuante';
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  useEffect(() => {
+    if (flutuante) return;
+    let cleanup: (() => void) | undefined;
+    void bootNativeShell().then((fn) => {
+      cleanup = fn;
+    });
+    return () => cleanup?.();
+  }, [flutuante]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('dark', 'light');
+    if (theme === 'dark') root.classList.add('dark');
+    else if (theme === 'light') root.classList.add('light');
+  }, [theme]);
+
+  return (
+    <div className="flex flex-col h-full w-full overflow-hidden relative">
+      <div className="hud-backdrop" aria-hidden="true" />
+      {flutuante ? <FloatingPage /> : <ShellPrincipal />}
     </div>
   );
 }

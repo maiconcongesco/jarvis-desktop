@@ -6,7 +6,13 @@ import { mensagemErroRede } from '../lib/errors';
 import { checkHealth } from '../lib/health';
 import { useHistoryStore } from '../lib/history';
 import { testarAutenticacao } from '../lib/jarvis';
-import { useSettingsStore, type Theme } from '../lib/settings';
+import { registrarAtalho, sincronizarAutostart } from '../lib/native';
+import {
+  DEFAULT_SHORTCUT,
+  useSettingsStore,
+  type Theme,
+} from '../lib/settings';
+import { isTauri } from '../lib/tauriEnv';
 import {
   clearDesktopToken,
   getDesktopToken,
@@ -17,15 +23,20 @@ export function SettingsPage() {
   const apiUrl = useSettingsStore((s) => s.apiUrl);
   const theme = useSettingsStore((s) => s.theme);
   const voiceAutoplay = useSettingsStore((s) => s.voiceAutoplay);
+  const autostart = useSettingsStore((s) => s.autostart);
+  const globalShortcut = useSettingsStore((s) => s.globalShortcut);
   const setApiUrl = useSettingsStore((s) => s.setApiUrl);
   const setTheme = useSettingsStore((s) => s.setTheme);
   const setVoiceAutoplay = useSettingsStore((s) => s.setVoiceAutoplay);
+  const setAutostart = useSettingsStore((s) => s.setAutostart);
+  const setGlobalShortcut = useSettingsStore((s) => s.setGlobalShortcut);
   const exportar = useHistoryStore((s) => s.exportar);
   const importar = useHistoryStore((s) => s.importar);
   const limpar = useHistoryStore((s) => s.limpar);
 
   const [draftUrl, setDraftUrl] = useState(apiUrl);
   const [draftToken, setDraftToken] = useState('');
+  const [draftShortcut, setDraftShortcut] = useState(globalShortcut);
   const [temToken, setTemToken] = useState(false);
   const [testing, setTesting] = useState(false);
 
@@ -34,11 +45,41 @@ export function SettingsPage() {
   }, [apiUrl]);
 
   useEffect(() => {
+    setDraftShortcut(globalShortcut);
+  }, [globalShortcut]);
+
+  useEffect(() => {
     void getDesktopToken().then((t) => {
       setTemToken(Boolean(t));
       setDraftToken('');
     });
   }, []);
+
+  const salvarAutostart = async (ligado: boolean) => {
+    setAutostart(ligado);
+    try {
+      await sincronizarAutostart(ligado);
+      toast.success(ligado ? 'Autostart ligado' : 'Autostart desligado');
+    } catch (e) {
+      toast.error(mensagemErroRede(e));
+    }
+  };
+
+  const salvarAtalho = async () => {
+    const next = draftShortcut.trim() || DEFAULT_SHORTCUT;
+    setGlobalShortcut(next);
+    setDraftShortcut(next);
+    try {
+      await registrarAtalho(next);
+      toast.success(`Atalho: ${next}`);
+    } catch (e) {
+      toast.error(
+        isTauri()
+          ? mensagemErroRede(e)
+          : 'Atalho só funciona no app nativo (Tauri).',
+      );
+    }
+  };
 
   const saveUrl = () => {
     setApiUrl(draftUrl.trim() || apiUrl);
@@ -196,6 +237,40 @@ export function SettingsPage() {
           Segurar para falar usa `/v1/voice`. O botão de alto-falante em cada
           mensagem chama `/v1/tts`. Um áudio por vez.
         </p>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Autostart
+        </label>
+        <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text)' }}>
+          <input
+            type="checkbox"
+            checked={autostart}
+            onChange={(e) => void salvarAutostart(e.target.checked)}
+          />
+          Iniciar com o Windows (só bandeja, `--hidden`)
+        </label>
+        <p className="text-xs opacity-70" style={{ color: 'var(--color-text)' }}>
+          Fechar a janela principal esconde na bandeja; Sair pelo menu da bandeja.
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <label className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Atalho global (janela flutuante)
+        </label>
+        <Input
+          value={draftShortcut}
+          onChange={(e) => setDraftShortcut(e.target.value)}
+          placeholder={DEFAULT_SHORTCUT}
+        />
+        <p className="text-xs opacity-70" style={{ color: 'var(--color-text)' }}>
+          Formato Tauri, ex. <code>CommandOrControl+Space</code> (Ctrl+Espaço no Windows).
+        </p>
+        <Button type="button" variant="outline" onClick={() => void salvarAtalho()}>
+          Aplicar atalho
+        </Button>
       </section>
 
       <section className="flex flex-col gap-2">
