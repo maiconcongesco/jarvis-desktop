@@ -1,7 +1,7 @@
 [package]
 name = "jarvis-desktop"
 version = "0.1.1"
-description = "Jarvis Desktop â€” cliente nativo do JARVIS (cÃ©rebro na API da VM)"
+description = "Jarvis Desktop — cliente nativo do JARVIS (cérebro na API da VM)"
 edition = "2021"
 license = "Apache-2.0"
 
