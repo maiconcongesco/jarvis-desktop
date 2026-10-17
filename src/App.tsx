@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, NavLink } from 'react-router';
 import { Toaster } from './components/ui/sonner';
 import { ChatPage } from './pages/ChatPage';
+import { HudPage } from './pages/HudPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SobrePage } from './pages/SobrePage';
 import { loadSettings, useSettingsStore } from './lib/settings';
@@ -48,6 +49,15 @@ export default function App() {
             Conversa
           </NavLink>
           <NavLink
+            to="/hud"
+            className={({ isActive }) =>
+              isActive ? 'underline underline-offset-4' : 'opacity-70 hover:opacity-100'
+            }
+            style={{ color: 'var(--color-text)' }}
+          >
+            HUD
+          </NavLink>
+          <NavLink
             to="/configuracoes"
             className={({ isActive }) =>
               isActive ? 'underline underline-offset-4' : 'opacity-70 hover:opacity-100'
@@ -70,6 +80,7 @@ export default function App() {
       <main className="flex-1 min-h-0 relative z-10">
         <Routes>
           <Route path="/" element={<ChatPage />} />
+          <Route path="/hud" element={<HudPage />} />
           <Route path="/configuracoes" element={<SettingsPage />} />
           <Route path="/sobre" element={<SobrePage />} />
         </Routes>

@@ -4,7 +4,11 @@ import { DEFAULT_API_URL, getApiUrl, loadSettings, useSettingsStore } from './se
 describe('settings', () => {
   beforeEach(() => {
     localStorage.clear();
-    useSettingsStore.setState({ apiUrl: DEFAULT_API_URL, theme: 'system' });
+    useSettingsStore.setState({
+      apiUrl: DEFAULT_API_URL,
+      theme: 'system',
+      voiceAutoplay: false,
+    });
   });
 
   it('usa a URL padrão da API na LAN', () => {
@@ -18,5 +22,12 @@ describe('settings', () => {
     const loaded = loadSettings();
     expect(loaded.apiUrl).toBe('http://127.0.0.1:8000/');
     expect(getApiUrl()).toBe('http://127.0.0.1:8000');
+  });
+
+  it('persiste voiceAutoplay', () => {
+    useSettingsStore.getState().setVoiceAutoplay(true);
+    useSettingsStore.setState({ voiceAutoplay: false });
+    const loaded = loadSettings();
+    expect(loaded.voiceAutoplay).toBe(true);
   });
 });

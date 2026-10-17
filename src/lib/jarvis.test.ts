@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { JarvisApiError } from './errors';
 import {
+  decodificarCabecalho,
   enviarFeedback,
+  enviarVoz,
+  negarAprovacao,
+  obterHudDados,
   obterTrace,
+  sintetizarTts,
   streamChat,
   textoCanonico,
 } from './jarvis';
@@ -25,7 +30,11 @@ function sseBody(chunks: string[]): ReadableStream<Uint8Array> {
 
 describe('jarvis client', () => {
   beforeEach(async () => {
-    useSettingsStore.setState({ apiUrl: DEFAULT_API_URL, theme: 'system' });
+    useSettingsStore.setState({
+      apiUrl: DEFAULT_API_URL,
+      theme: 'system',
+      voiceAutoplay: false,
+    });
     _resetVaultMemoria();
     sessionStorage.clear();
     await setDesktopToken('token-teste-32-bytes-aaaaaaaaaa');
@@ -124,5 +133,70 @@ describe('jarvis client', () => {
     expect(trace.agente).toBe('core');
     await enviarFeedback('t1', 'up');
     expect(vi.mocked(fetch).mock.calls[1]![0]).toContain('/v1/feedback');
+  });
+
+  it('decodificarCabecalho trata percent-encoding e lixo', () => {
+    expect(decodificarCabecalho(encodeURIComponent('olá'))).toBe('olá');
+    expect(decodificarCabecalho(null)).toBe('');
+    expect(decodificarCabecalho('%E0%A4%A')).toBe('%E0%A4%A');
+  });
+
+  it('enviarVoz manda FormData sem Content-Type JSON e lê cabeçalhos', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(
+      new Response(new Blob(['RIFF']), {
+        status: 200,
+        headers: {
+          'Content-Type': 'audio/wav',
+          'X-Transcript': encodeURIComponent('oi'),
+          'X-Text': encodeURIComponent('olá'),
+          'X-Trace-Id': 't-voz',
+          'X-Agent': 'core',
+        },
+      }),
+    );
+    const r = await enviarVoz(new Blob(['wav']), { userRef: 'hud' });
+    expect(r.transcript).toBe('oi');
+    expect(r.text).toBe('olá');
+    expect(r.trace_id).toBe('t-voz');
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(String(url)).toContain('/v1/voice');
+    expect(init?.body).toBeInstanceOf(FormData);
+    expect((init?.headers as Headers).get('Content-Type')).toBeNull();
+    expect((init?.headers as Headers).get('Authorization')).toMatch(/^Bearer /);
+  });
+
+  it('sintetizarTts, hud e negar', async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(new Blob(['tts']), {
+          status: 200,
+          headers: { 'Content-Type': 'audio/wav' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            secoes: [{ nome: 'agenda', ok: true, resumo: 'livre', cegueira: null }],
+            aprovacoes: [],
+            agora: '2026-10-17T00:00:00Z',
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ status: 'recusada' }), { status: 200 }),
+      );
+
+    const wav = await sintetizarTts('teste');
+    expect(wav.size).toBeGreaterThan(0);
+    expect(String(fetchMock.mock.calls[0]![0])).toContain('/v1/tts');
+
+    const hud = await obterHudDados();
+    expect(hud.secoes[0]?.nome).toBe('agenda');
+
+    await negarAprovacao('a1');
+    expect(String(fetchMock.mock.calls[2]![0])).toContain('/v1/aprovacoes/a1/negar');
   });
 });

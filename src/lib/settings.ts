@@ -8,11 +8,14 @@ export type Theme = 'system' | 'dark' | 'light';
 export interface DesktopSettings {
   apiUrl: string;
   theme: Theme;
+  /** Ler respostas em voz alta automaticamente após o stream. */
+  voiceAutoplay: boolean;
 }
 
 interface SettingsState extends DesktopSettings {
   setApiUrl: (url: string) => void;
   setTheme: (theme: Theme) => void;
+  setVoiceAutoplay: (on: boolean) => void;
   hydrate: (partial: Partial<DesktopSettings>) => void;
 }
 
@@ -20,7 +23,11 @@ function persist(state: DesktopSettings) {
   try {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ apiUrl: state.apiUrl, theme: state.theme }),
+      JSON.stringify({
+        apiUrl: state.apiUrl,
+        theme: state.theme,
+        voiceAutoplay: state.voiceAutoplay,
+      }),
     );
   } catch {
     /* ignore quota */
@@ -30,12 +37,17 @@ function persist(state: DesktopSettings) {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   apiUrl: DEFAULT_API_URL,
   theme: 'system',
+  voiceAutoplay: false,
   setApiUrl: (apiUrl) => {
     set({ apiUrl });
     persist(get());
   },
   setTheme: (theme) => {
     set({ theme });
+    persist(get());
+  },
+  setVoiceAutoplay: (voiceAutoplay) => {
+    set({ voiceAutoplay });
     persist(get());
   },
   hydrate: (partial) => {
@@ -55,6 +67,7 @@ export function loadSettings(): DesktopSettings {
           parsed.theme === 'dark' || parsed.theme === 'light' || parsed.theme === 'system'
             ? parsed.theme
             : 'system',
+        voiceAutoplay: Boolean(parsed.voiceAutoplay),
       };
       useSettingsStore.getState().hydrate(next);
       return next;
@@ -62,7 +75,7 @@ export function loadSettings(): DesktopSettings {
   } catch {
     /* ignore */
   }
-  return { apiUrl: DEFAULT_API_URL, theme: 'system' };
+  return { apiUrl: DEFAULT_API_URL, theme: 'system', voiceAutoplay: false };
 }
 
 export function getApiUrl(): string {

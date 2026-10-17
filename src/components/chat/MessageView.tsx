@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ThumbsDown, ThumbsUp, Waypoints } from 'lucide-react';
+import { ThumbsDown, ThumbsUp, Volume2, VolumeX, Waypoints } from 'lucide-react';
 import type { ChatMessage, ToolCallLive } from '../../lib/history';
+import { useTtsStore } from '../../lib/tts';
 import { Button } from '../ui/button';
 
 function formatMs(ms: number): string {
@@ -47,6 +48,11 @@ interface Props {
 export function MessageView({ message, streaming, onFeedback, onVerTrace }: Props) {
   const [copiado, setCopiado] = useState(false);
   const isUser = message.role === 'user';
+  const ttsState = useTtsStore((s) => s.state);
+  const speakingId = useTtsStore((s) => s.speakingId);
+  const speak = useTtsStore((s) => s.speak);
+  const stop = useTtsStore((s) => s.stop);
+  const falandoEsta = speakingId === message.id && ttsState !== 'idle';
 
   return (
     <div
@@ -126,6 +132,20 @@ export function MessageView({ message, streaming, onFeedback, onVerTrace }: Prop
           >
             {copiado ? 'copiado' : 'copiar'}
           </button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1"
+            aria-label={falandoEsta ? 'Parar leitura' : 'Ler em voz alta'}
+            title={falandoEsta ? 'Parar' : 'Ler em voz alta'}
+            onClick={() => {
+              if (falandoEsta) stop();
+              else void speak(message.id, message.content);
+            }}
+          >
+            {falandoEsta ? <VolumeX size={12} /> : <Volume2 size={12} />}
+          </Button>
         </div>
       )}
     </div>
