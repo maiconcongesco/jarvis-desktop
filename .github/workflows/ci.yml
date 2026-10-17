@@ -13,8 +13,8 @@ jobs:
     name: front
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           cache: npm
@@ -32,9 +32,13 @@ jobs:
       run:
         working-directory: src-tauri
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # SHA do branch stable (sem tag de versão); toolchain explícito pois não vem do ref.
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           workspaces: src-tauri
       - name: Dependências do Tauri (Linux)
@@ -46,5 +50,7 @@ jobs:
         run: |
           mkdir -p ../dist
           printf '%s\n' '<!doctype html><html><head><meta charset="utf-8"><title>ci</title></head><body></body></html>' > ../dist/index.html
+      - run: cargo fmt --check
+      - run: cargo clippy -- -D warnings
       - run: cargo test
       - run: cargo check
