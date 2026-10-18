@@ -22,7 +22,8 @@ Fases anteriores na `main`: F3 casca · F4 chat/cofre · F5 voz/HUD · F6 bandej
 Publicados (não draft):
 
 - [v0.1.0](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.0) — baseline
-- [v0.1.1](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.1) — Latest (updater)
+- [v0.1.1](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.1) — updater (sem CORS: não fala com a API)
+- [v0.1.2](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.2) — Latest (tauri-plugin-http, #12)
 
 Cada release traz NSIS + `.sig` + `latest.json`. Tags `v*` disparam
 `.github/workflows/release.yml`. Segredos do Actions (não no Git):
