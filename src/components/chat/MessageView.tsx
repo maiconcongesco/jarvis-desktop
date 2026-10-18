@@ -44,7 +44,7 @@ interface Props {
   onVerTrace?: () => void;
 }
 
-/** Bolha de mensagem (markdown GFM fica para portar do _upstream). */
+/** Bolha de mensagem. */
 export function MessageView({ message, streaming, onFeedback, onVerTrace }: Props) {
   const [copiado, setCopiado] = useState(false);
   const isUser = message.role === 'user';
