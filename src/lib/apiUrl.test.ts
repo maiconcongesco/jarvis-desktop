@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import capability from '../../src-tauri/capabilities/default.json';
 import { origensPermitidas, validarApiUrl } from './apiUrl';
 import { DEFAULT_API_URL } from './settings';
 
@@ -30,5 +31,16 @@ describe('apiUrl x CSP', () => {
     expect(validarApiUrl('http://192.168.20.210:9000', permitidas).ok).toBe(false);
     expect(validarApiUrl('192.168.20.210:8000', permitidas).ok).toBe(false);
     expect(validarApiUrl('ftp://192.168.20.210:8000', permitidas).ok).toBe(false);
+  });
+
+  it('escopo do plugin HTTP lista os mesmos hosts da API que o CSP', () => {
+    const http = capability.permissions.find(
+      (p): p is { identifier: string; allow: Array<{ url: string }> } =>
+        typeof p === 'object' && p.identifier === 'http:default',
+    );
+    expect(http, 'capability http:default ausente').toBeDefined();
+    const doEscopo = http!.allow.map((a) => new URL(a.url.replace(/\*$/, '')).origin).sort();
+    const daApi = origensPermitidas().filter((o) => !o.startsWith('https://')).sort();
+    expect(doEscopo).toEqual(daApi);
   });
 });

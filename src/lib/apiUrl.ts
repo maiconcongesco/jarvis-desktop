@@ -1,9 +1,10 @@
 /**
  * Validação da URL da API contra o `connect-src` do CSP do app Tauri.
  *
- * O CSP em `src-tauri/tauri.conf.json` é a fonte única: se a URL não estiver
- * lá, o webview bloqueia a chamada (sem tauri-plugin-http, ver `lib/http.ts`).
- * Para liberar outro host, edite o CSP e gere nova versão do app.
+ * O CSP em `src-tauri/tauri.conf.json` é a referência; o escopo da capability
+ * `http:default` (tauri-plugin-http, ver `lib/http.ts`) precisa listar os mesmos
+ * hosts — o teste `apiUrl.test.ts` trava essa sincronia. Para liberar outro host,
+ * edite os dois e gere nova versão do app.
  */
 import tauriConf from '../../src-tauri/tauri.conf.json';
 
