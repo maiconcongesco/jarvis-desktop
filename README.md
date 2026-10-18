@@ -23,7 +23,8 @@ Publicados (não draft):
 
 - [v0.1.0](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.0) — baseline
 - [v0.1.1](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.1) — updater (sem CORS: não fala com a API)
-- [v0.1.2](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.2) — Latest (tauri-plugin-http, #12)
+- [v0.1.2](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.2) — tauri-plugin-http (#12); o token não era salvo
+- [v0.1.3](https://github.com/maiconcongesco/jarvis-desktop/releases/tag/v0.1.3) — Latest (cofre do token, #14)
 
 Cada release traz NSIS + `.sig` + `latest.json`. Tags `v*` disparam
 `.github/workflows/release.yml`. Segredos do Actions (não no Git):
