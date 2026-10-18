@@ -34,8 +34,9 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        // Sem tauri-plugin-http: o front usa o fetch do webview (Vite proxy no
-        // dev / LAN no app), limitado pelo connect-src do CSP. Ver src/lib/http.ts.
+        // HTTP pela casca (sem CORS): a API do JARVIS não responde preflight. O escopo
+        // de URLs fica na capability `http:default` (mesmos hosts do connect-src do CSP).
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--hidden"]),

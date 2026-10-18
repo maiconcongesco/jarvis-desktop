@@ -1,3 +1,4 @@
+import { jarvisFetch } from './http';
 import { getApiUrl } from './settings';
 
 /** Consulta /healthz da API do JARVIS. Sem token — endpoint público na LAN/VPN. */
@@ -6,7 +7,7 @@ export async function checkHealth(timeoutMs = 5000): Promise<boolean> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(`${base}/healthz`, { signal: ctrl.signal });
+    const res = await jarvisFetch(`${base}/healthz`, { signal: ctrl.signal });
     return res.ok;
   } catch {
     return false;
