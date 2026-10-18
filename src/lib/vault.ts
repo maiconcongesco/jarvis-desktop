@@ -1,27 +1,21 @@
 /**
  * Token desktop: Credential Manager via Tauri/keyring.
  * Fora do Tauri (vite/vitest): memória de processo + sessionStorage (nunca localStorage).
+ *
+ * Import estático de propósito: o dinâmico com `@vite-ignore` ficava fora do bundle e,
+ * no app instalado, o `invoke` nunca chegava ao Rust (o token não era salvo nem lido).
  */
+import { invoke } from '@tauri-apps/api/core';
+import { isTauri } from './tauriEnv';
 
 const SESSION_KEY = 'jarvis-desktop-token-sessao';
 
 let memoria: string | null = null;
 
-function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-}
-
-async function invokeTauri<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  const mod = (await import(
-    /* @vite-ignore */ '@tauri-apps/api/core'
-  )) as { invoke: <R>(c: string, a?: Record<string, unknown>) => Promise<R> };
-  return mod.invoke<T>(cmd, args);
-}
-
 export async function getDesktopToken(): Promise<string | null> {
   if (isTauri()) {
     try {
-      const valor = await invokeTauri<string | null>('get_desktop_token');
+      const valor = await invoke<string | null>('get_desktop_token');
       return valor && valor.trim() ? valor.trim() : null;
     } catch {
       return null;
@@ -47,7 +41,7 @@ export async function setDesktopToken(token: string): Promise<void> {
     return;
   }
   if (isTauri()) {
-    await invokeTauri('set_desktop_token', { token: limpo });
+    await invoke('set_desktop_token', { token: limpo });
     return;
   }
   memoria = limpo;
@@ -61,7 +55,7 @@ export async function setDesktopToken(token: string): Promise<void> {
 export async function clearDesktopToken(): Promise<void> {
   if (isTauri()) {
     try {
-      await invokeTauri('clear_desktop_token');
+      await invoke('clear_desktop_token');
     } catch {
       /* ignore */
     }

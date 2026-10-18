@@ -105,7 +105,12 @@ export function SettingsPage() {
       toast.error('Cole o token (não fica vazio). Use Limpar para remover.');
       return;
     }
-    await setDesktopToken(draftToken);
+    try {
+      await setDesktopToken(draftToken);
+    } catch (e) {
+      toast.error(`Não consegui salvar o token: ${e instanceof Error ? e.message : String(e)}`);
+      return;
+    }
     setDraftToken('');
     setTemToken(true);
     toast.success('Token guardado no cofre da sessão/Credential Manager');
