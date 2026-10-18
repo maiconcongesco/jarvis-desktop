@@ -18,7 +18,7 @@
         </a>{' '}
         (Apache-2.0). Detalhes em <code>NOTICE</code>.
       </p>
-      <p className="opacity-70">Versão 0.1.1 · updater assinado (F7)</p>
+      <p className="opacity-70">Versão 0.1.2 · updater assinado (F7)</p>
     </div>
   );
 }
