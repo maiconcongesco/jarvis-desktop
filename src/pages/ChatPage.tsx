@@ -52,6 +52,9 @@ export function ChatPage() {
   const markAutoSpoken = useTtsStore((s) => s.markAutoSpoken);
   const playBlob = useTtsStore((s) => s.playBlob);
 
+  // `buscar` lê o store via get(); `conversations` é a dependência real que
+  // força recalcular a lista quando o histórico muda.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const lista = useMemo(() => buscar(busca), [busca, conversations, buscar]);
   const ativa = conversations.find((c) => c.id === activeId) ?? null;
 

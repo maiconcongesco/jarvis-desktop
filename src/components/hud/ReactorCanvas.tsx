@@ -19,8 +19,11 @@ export function ReactorCanvas({ estado, nivel, className }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const estadoRef = useRef(estado);
   const nivelRef = useRef(nivel);
-  estadoRef.current = estado;
-  nivelRef.current = nivel;
+  // Sincroniza fora do render; o loop do canvas lê os refs a cada quadro.
+  useEffect(() => {
+    estadoRef.current = estado;
+    nivelRef.current = nivel;
+  }, [estado, nivel]);
 
   useEffect(() => {
     const tela = canvasRef.current;
