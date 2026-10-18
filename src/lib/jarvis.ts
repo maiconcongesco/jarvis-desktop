@@ -16,6 +16,10 @@ const TIMEOUT_PADRAO_MS = 30_000;
 export interface ChatStreamInicio {
   text: string;
   signal?: AbortSignal;
+  /**
+   * Inatividade máxima: até a resposta inicial e entre pedaços do stream.
+   * Renovado a cada pedaço recebido, então respostas longas não são cortadas.
+   */
   timeoutMs?: number;
 }
 
@@ -101,10 +105,20 @@ async function parseErro(res: Response): Promise<JarvisApiError> {
 function comTimeout(signal: AbortSignal | undefined, ms: number): {
   signal: AbortSignal;
   limpar: () => void;
+  /** Reinicia a contagem (timeout de inatividade). */
+  renovar: () => void;
+  /** true se o abort veio do timer, não do chamador. */
+  estourou: () => boolean;
 } {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
+  let estourou = false;
+  const disparar = () => {
+    estourou = true;
+    ctrl.abort();
+  };
+  let timer = setTimeout(disparar, ms);
   const onAbort = () => ctrl.abort();
+  if (signal?.aborted) ctrl.abort();
   signal?.addEventListener('abort', onAbort);
   return {
     signal: ctrl.signal,
@@ -112,6 +126,12 @@ function comTimeout(signal: AbortSignal | undefined, ms: number): {
       clearTimeout(timer);
       signal?.removeEventListener('abort', onAbort);
     },
+    renovar: () => {
+      if (ctrl.signal.aborted) return;
+      clearTimeout(timer);
+      timer = setTimeout(disparar, ms);
+    },
+    estourou: () => estourou,
   };
 }
 
@@ -134,7 +154,7 @@ export async function* streamChat(
 ): AsyncGenerator<EventoStream> {
   const base = getApiUrl();
   const timeoutMs = pedido.timeoutMs ?? TIMEOUT_PADRAO_MS;
-  const { signal, limpar } = comTimeout(pedido.signal, timeoutMs);
+  const { signal, limpar, renovar, estourou } = comTimeout(pedido.signal, timeoutMs);
   try {
     const res = await jarvisFetch(`${base}/v1/chat/stream`, {
       method: 'POST',
@@ -147,8 +167,9 @@ export async function* streamChat(
       signal,
     });
     if (!res.ok) throw await parseErro(res);
+    renovar();
 
-    for await (const frame of lerSse(res, signal)) {
+    for await (const frame of lerSse(res, signal, renovar)) {
       let dados: Record<string, unknown> = {};
       try {
         dados = JSON.parse(frame.data) as Record<string, unknown>;
@@ -196,6 +217,14 @@ export async function* streamChat(
           break;
       }
     }
+  } catch (e) {
+    if (estourou()) {
+      throw new JarvisApiError(
+        0,
+        `O JARVIS ficou ${Math.round(timeoutMs / 1000)} s sem responder.`,
+      );
+    }
+    throw e;
   } finally {
     limpar();
   }

@@ -30,6 +30,38 @@ function sseBody(chunks: string[]): ReadableStream<Uint8Array> {
   });
 }
 
+/** Entrega um pedaço a cada `intervaloMs`. */
+function sseBodyLento(chunks: string[], intervaloMs: number): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  let i = 0;
+  return new ReadableStream({
+    async pull(controller) {
+      await new Promise((r) => setTimeout(r, intervaloMs));
+      if (i >= chunks.length) {
+        controller.close();
+        return;
+      }
+      controller.enqueue(encoder.encode(chunks[i++]));
+    },
+  });
+}
+
+/** Entrega um pedaço e depois fica parado (nunca fecha). */
+function sseBodyTravado(primeiro: string): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  let enviado = false;
+  return new ReadableStream({
+    pull(controller) {
+      if (!enviado) {
+        enviado = true;
+        controller.enqueue(encoder.encode(primeiro));
+        return;
+      }
+      return new Promise<void>(() => {});
+    },
+  });
+}
+
 describe('jarvis client', () => {
   beforeEach(async () => {
     useSettingsStore.setState({
@@ -88,6 +120,66 @@ describe('jarvis client', () => {
     const fim = eventos.find((e) => e.tipo === 'fim');
     expect(fim).toMatchObject({ text: 'Canônico.', trace_id: 't1' });
     expect(textoCanonico('Parcial.', 'Canônico.')).toBe('Canônico.');
+  });
+
+  it('streamChat não corta stream longo enquanto chegam pedaços', async () => {
+    // 5 pedaços a cada 40 ms = ~200 ms no total, timeout de inatividade 100 ms.
+    const frases = ['a', 'b', 'c', 'd'].map(
+      (t) => `event: frase\ndata: {"texto":"${t}"}\n\n`,
+    );
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(
+        sseBodyLento(
+          [
+            ...frases,
+            'event: fim\ndata: {"text":"abcd","trace_id":"t2","agent":"core","modelo":"m","latencia_ms":1,"custo_usd":0}\n\n',
+          ],
+          40,
+        ),
+        { status: 200 },
+      ),
+    );
+
+    const tipos: string[] = [];
+    for await (const ev of streamChat({ text: 'oi', timeoutMs: 100 })) {
+      tipos.push(ev.tipo);
+    }
+    expect(tipos).toEqual(['frase', 'frase', 'frase', 'frase', 'fim']);
+  });
+
+  it('streamChat aborta por inatividade com mensagem própria', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(sseBodyTravado('event: rota\ndata: {"agente":"core"}\n\n'), {
+        status: 200,
+      }),
+    );
+
+    const tipos: string[] = [];
+    const rodar = async () => {
+      for await (const ev of streamChat({ text: 'oi', timeoutMs: 50 })) {
+        tipos.push(ev.tipo);
+      }
+    };
+    const erro = await rodar().catch((e: unknown) => e);
+    expect(erro).toBeInstanceOf(JarvisApiError);
+    expect((erro as JarvisApiError).message).toMatch(/sem responder/);
+    expect(tipos).toEqual(['rota']);
+  });
+
+  it('streamChat cancelado pelo chamador continua AbortError', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(sseBodyTravado('event: rota\ndata: {"agente":"core"}\n\n'), {
+        status: 200,
+      }),
+    );
+    const ctrl = new AbortController();
+    const rodar = async () => {
+      for await (const ev of streamChat({ text: 'oi', signal: ctrl.signal, timeoutMs: 5_000 })) {
+        if (ev.tipo === 'rota') ctrl.abort();
+      }
+    };
+    const erro = await rodar().catch((e: unknown) => e);
+    expect((erro as Error).name).toBe('AbortError');
   });
 
   it('401 vira mensagem em pt-BR', async () => {

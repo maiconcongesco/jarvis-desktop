@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { validarApiUrl } from '../lib/apiUrl';
 import { mensagemErroRede } from '../lib/errors';
 import { checkHealth } from '../lib/health';
 import { useHistoryStore } from '../lib/history';
@@ -81,9 +82,22 @@ export function SettingsPage() {
     }
   };
 
+  const validacaoUrl = validarApiUrl(draftUrl.trim() || apiUrl);
+
+  /** Aplica a URL do rascunho. No app nativo, recusa host fora do CSP. */
+  const aplicarUrl = (): boolean => {
+    const alvo = draftUrl.trim() || apiUrl;
+    const v = validarApiUrl(alvo);
+    if (!v.ok && isTauri()) {
+      toast.error(v.motivo);
+      return false;
+    }
+    setApiUrl(v.ok ? v.url : alvo);
+    return true;
+  };
+
   const saveUrl = () => {
-    setApiUrl(draftUrl.trim() || apiUrl);
-    toast.success('URL salva');
+    if (aplicarUrl()) toast.success('URL salva');
   };
 
   const saveToken = async () => {
@@ -105,7 +119,7 @@ export function SettingsPage() {
   };
 
   const test = async () => {
-    setApiUrl(draftUrl.trim() || apiUrl);
+    if (!aplicarUrl()) return;
     if (draftToken.trim()) {
       await setDesktopToken(draftToken);
       setDraftToken('');
@@ -162,7 +176,14 @@ export function SettingsPage() {
           value={draftUrl}
           onChange={(e) => setDraftUrl(e.target.value)}
           placeholder="http://192.168.20.210:8000"
+          aria-invalid={!validacaoUrl.ok}
         />
+        {!validacaoUrl.ok && (
+          <p className="text-xs" style={{ color: 'var(--color-error)' }} role="alert">
+            {validacaoUrl.motivo}
+            {isTauri() ? '' : ' (no navegador de dev é só aviso.)'}
+          </p>
+        )}
         <Button type="button" onClick={saveUrl}>
           Salvar URL
         </Button>

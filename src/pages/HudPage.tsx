@@ -155,6 +155,9 @@ export function HudPage() {
     return () => gravador.current.setLevelListener(null);
   }, []);
 
+  // Cancela voz/stream em andamento ao sair do HUD.
+  useEffect(() => () => pedidoRef.current?.abort(), []);
+
   const interromper = useCallback(() => {
     pedidoRef.current?.abort();
     stopTts();
@@ -235,9 +238,12 @@ export function HudPage() {
     setFalaVoce(texto);
     setFalaJarvis('');
     definirEstado('pensando');
+    pedidoRef.current?.abort();
+    const ctrl = new AbortController();
+    pedidoRef.current = ctrl;
     try {
       let final = '';
-      for await (const e of streamChat({ text: texto })) {
+      for await (const e of streamChat({ text: texto, signal: ctrl.signal })) {
         if (e.tipo === 'frase') final = final ? `${final} ${e.texto}` : e.texto;
         if (e.tipo === 'fim') final = e.text;
         if (e.tipo === 'erro') throw new Error(e.detalhe);
@@ -245,7 +251,10 @@ export function HudPage() {
       setFalaJarvis(final);
       definirEstado('ocioso');
     } catch (e) {
+      if ((e as Error)?.name === 'AbortError') return;
       falhar(mensagemErroRede(e));
+    } finally {
+      if (pedidoRef.current === ctrl) pedidoRef.current = null;
     }
   };
 
